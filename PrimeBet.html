@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f1220;
+      --panel: #171a2b;
+      --accent: #7c5cff;
+      --accent-2: #00d1b2;
+      --text: #e9ecf1;
+      --muted: #9aa3b2;
+      --danger: #ff6b6b;
+      --win: #35d07f;
+      --lose: #ff5a7a;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      background: radial-gradient(1200px 800px at 70% -10%, #1a1f39 0%, var(--bg) 50%);
+      color: var(--text);
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .app {
+      width: min(980px, 100%);
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1.2fr 1fr;
+    }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: linear-gradient(180deg, #1a1f34 0%, var(--panel) 100%);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .title {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin-bottom: 8px;
+    }
+    .title h1 {
+      margin: 0;
+      font-size: clamp(20px, 2.3vw, 28px);
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+    .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+    .bank {
+      display: flex; align-items: center; gap: 10px;
+      background: #111424;
+      padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.06);
+      width: fit-content;
+    }
+    .chip {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: conic-gradient(from 0deg, var(--accent), var(--accent-2));
+      display: inline-grid; place-items: center; color: #0a0c16; font-weight: 800; font-size: 12px;
+      border: 2px solid #0b0f1d;
+    }
+    .layout { display: grid; gap: 16px; }
+    .controls { display: grid; gap: 14px; }
+    .row { display: grid; gap: 10px; align-items: center; }
+    .row.inline { grid-template-columns: 1fr auto; }
+    label.group { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
+    .bet-types {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+    }
+    .toggle {
+      position: relative; border-radius: 14px; overflow: hidden;
+      background: #0f1222; border: 1px solid rgba(255,255,255,.06);
+      display: grid; grid-template-columns: 1fr 1fr;
+    }
+    .toggle button {
+      border: 0; background: transparent; color: var(--text);
+      padding: 12px; font-weight: 700; cursor: pointer;
+    }
+    .toggle button.active { background: rgba(124, 92, 255, .18); }
+    .evens {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+    }
+    .grid-nums {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;
+    }
+    .pill {
+      border: 1px solid rgba(255,255,255,.08);
+      background: #101328;
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      font-weight: 700;
+      transition: transform .06s ease, background .15s ease, border-color .15s ease;
+    }
+    .pill:hover { transform: translateY(-1px); }
+    .pill.active { background: rgba(0,209,178,.18); border-color: rgba(0,209,178,.4); }
+    .amount {
+      display: grid; grid-template-columns: 1fr auto; gap: 10px;
+      align-items: center;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: #0d0f1f;
+      color: var(--text);
+      font-size: 16px;
+      outline: none;
+    }
+    .quickbets {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .qb {
+      padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.12);
+      background: #0f1222; color: var(--text); cursor: pointer; font-weight: 700;
+    }
+    .actions {
+      display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+    }
+    .btn {
+      border: 0; border-radius: 14px; cursor: pointer; padding: 12px 16px; font-weight: 800;
+    }
+    .btn.primary { background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: #0b0f1d; }
+    .btn.secondary { background: #10142a; color: var(--text); border: 1px solid rgba(255,255,255,.12); }
+    .status {
+      font-weight: 800; letter-spacing: .03em;
+    }
+    .status.win { color: var(--win); }
+    .status.lose { color: var(--lose); }
+    /* Right column */
+    .stage {
+      display: grid; gap: 16px; align-content: start;
+    }
+    .dice-wrap {
+      display: grid; place-items: center; height: 240px;
+      background: radial-gradient(600px 240px at 50% 0%, #1c2141, #12152b);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      position: relative;
+      overflow: hidden;
+    }
+    .die {
+      width: 120px; height: 120px; border-radius: 24px;
+      background: #f7f7fb;
+      display: grid; place-items: center;
+      box-shadow: inset 0 8px 24px rgba(0,0,0,.08), 0 18px 40px rgba(0,0,0,.35);
+      transform: rotate(0deg);
+      transition: transform .7s cubic-bezier(.2,.9,.2,1.2);
+    }
+    .pips {
+      display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+      width: 78%; height: 78%; gap: 6%;
+    }
+    .pip {
+      background: #1f2342; border-radius: 50%;
+      box-shadow: inset 0 2px 0 rgba(0,0,0,.15);
+      opacity: 0;
+    }
+    .pip.on { opacity: 1; }
+    .log {
+      max-height: 280px; overflow: auto; background: #0f1222; border: 1px solid rgba(255,255,255,.06);
+      border-radius: 14px; padding: 12px;
+      font-size: 14px; color: #d8deea;
+    }
+    .log p { margin: 8px 0; }
+    .muted { color: var(--muted); }
+    .rule { font-size: 13px; color: var(--muted); }
+    .flex { display: flex; align-items: center; gap: 10px; }
+    .spacer { height: 4px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="card layout">
+      <div class="title">
+        <h1>🎲 Dice</h1>
+        <div class="bank" title="Your current chips">
+          <span class="chip">◆</span>
+          <strong id="chips">50</strong> chips
+        </div>
+      </div>
+      <div class="subtitle">Pick <b>Odd/Even</b> or an <b>Exact number (1–6)</b>, place your bet, then roll.</div>
+
+      <div class="controls card">
+        <div class="row">
+          <label class="group">Bet Type</label>
+          <div class="toggle" role="tablist" aria-label="Bet type">
+            <button id="tabParity" class="active" role="tab" aria-selected="true">Odd / Even</button>
+            <button id="tabExact" role="tab" aria-selected="false">Exact (1–6)</button>
+          </div>
+        </div>
+
+        <div id="parityPanel" class="row">
+          <label class="group">Choose</label>
+          <div class="evens">
+            <div class="pill" data-parity="odd">Odd</div>
+            <div class="pill" data-parity="even">Even</div>
+          </div>
+        </div>
+
+        <div id="exactPanel" class="row" style="display:none">
+          <label class="group">Pick a number</label>
+          <div class="grid-nums">
+            <div class="pill" data-num="1">1</div>
+            <div class="pill" data-num="2">2</div>
+            <div class="pill" data-num="3">3</div>
+            <div class="pill" data-num="4">4</div>
+            <div class="pill" data-num="5">5</div>
+            <div class="pill" data-num="6">6</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <label class="group">Bet Amount</label>
+          <div class="amount">
+            <input id="bet" type="number" min="1" step="1" placeholder="Enter chips to bet (e.g., 5)" />
+            <div class="quickbets">
+              <button class="qb" data-qb="5">+5</button>
+              <button class="qb" data-qb="10">+10</button>
+              <button class="qb" data-qb="25">+25</button>
+              <button class="qb" data-qb="max">Max</button>
+              <button class="qb" data-qb="half">Half</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <div class="rule">
+    <b>Rules:</b> Start with 50 chips. Choose a bet type and amount ≤ your chips. If you win an Odd/Even bet you receive 2× your bet back (net +1×).
+    If you guess the exact number you receive 6× your bet back (net +5×). Hit Reset to start over.
+  </div>
+          <div class="flex">
+            <button id="rollBtn" class="btn primary">Roll 🎲</button>
+            <button id="resetBtn" class="btn secondary">Reset</button>
+          </div>
+        </div>
+
+        <div class="row inline">
+          <div id="message" class="status muted">Place a bet to play.</div>
+          <div class="muted">Hotkeys: O=Odd, E=Even, 1–6 pick number, R=Roll</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="rule">
+          <b>Rules:</b> Start with 50 chips. Choose a bet type and amount ≤ your chips. If you win an Odd/Even bet you receive 2× your bet back (net +1×).
+          If you guess the exact number you receive 12× your bet back (net +11×). Hit Reset to start over.
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="card dice-wrap">
+        <div id="die" class="die" aria-live="polite" aria-label="Dice face">
+          <div class="pips">
+            <!-- 9 grid cells; turn "on" as needed -->
+            <div class="pip" data-pos="1"></div>
+            <div class="pip" data-pos="2"></div>
+            <div class="pip" data-pos="3"></div>
+            <div class="pip" data-pos="4"></div>
+            <div class="pip" data-pos="5"></div>
+            <div class="pip" data-pos="6"></div>
+            <div class="pip" data-pos="7"></div>
+            <div class="pip" data-pos="8"></div>
+            <div class="pip" data-pos="9"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card log" id="log" aria-live="polite">
+        <p class="muted">Game log will appear here.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- State ---
+    let chips = 50;
+    let mode = "parity"; // "parity" or "exact"
+    let choice = null;   // "odd"/"even" or "1".."6"
+    let rolling = false;
+
+    // --- Elements ---
+    const chipsEl = document.getElementById("chips");
+    const messageEl = document.getElementById("message");
+    const betEl = document.getElementById("bet");
+    const logEl = document.getElementById("log");
+    const rollBtn = document.getElementById("rollBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const tabParity = document.getElementById("tabParity");
+    const tabExact = document.getElementById("tabExact");
+    const parityPanel = document.getElementById("parityPanel");
+    const exactPanel = document.getElementById("exactPanel");
+    const dieEl = document.getElementById("die");
+    const pips = [...document.querySelectorAll(".pip")];
+
+    // --- Helpers ---
+    function setChips(val) {
+      chips = Math.max(0, Math.floor(val));
+      chipsEl.textContent = chips;
+    }
+
+    function setMessage(text, type="info") {
+      messageEl.className = "status " + (type === "win" ? "win" : type === "lose" ? "lose" : "muted");
+      messageEl.textContent = text;
+    }
+
+    function log(line) {
+      const p = document.createElement("p");
+      p.textContent = line;
+      logEl.appendChild(p);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function clearActive(selector) {
+      document.querySelectorAll(selector).forEach(el => el.classList.remove("active"));
+    }
+
+    function pickParity(val) {
+      mode = "parity";
+      tabParity.classList.add("active"); tabParity.setAttribute("aria-selected","true");
+      tabExact.classList.remove("active"); tabExact.setAttribute("aria-selected","false");
+      parityPanel.style.display = "";
+      exactPanel.style.display = "none";
+      choice = val || choice;
+      if (val) {
+        clearActive('[data-parity]');
+        document.querySelector(`[data-parity="${val}"]`)?.classList.add("active");
+      }
+      setMessage("Betting on Odd/Even. Choose and set your amount.");
+    }
+
+    function pickExact(num) {
+      mode = "exact";
+      tabExact.classList.add("active"); tabExact.setAttribute("aria-selected","true");
+      tabParity.classList.remove("active"); tabParity.setAttribute("aria-selected","false");
+      parityPanel.style.display = "none";
+      exactPanel.style.display = "";
+      choice = num || choice;
+      if (num) {
+        clearActive('[data-num]');
+        document.querySelector(`[data-num="${num}"]`)?.classList.add("active");
+      }
+      setMessage("Betting on an exact number. Pick 1–6 and set your amount.");
+    }
+
+    function rotateDie() {
+      const spin = 360 + Math.floor(Math.random() * 720);
+      dieEl.style.transform = `rotate(${spin}deg)`;
+    }
+
+    function showFace(n) {
+      // Positions (1..9) map to 3x3 grid
+      const onSet = {
+        1: [5],
+        2: [1,9],
+        3: [1,5,9],
+        4: [1,3,7,9],
+        5: [1,3,5,7,9],
+        6: [1,3,4,6,7,9],
+      }[n];
+      pips.forEach(p => p.classList.remove("on"));
+      onSet.forEach(idx => document.querySelector(`.pip[data-pos="${idx}"]`).classList.add("on"));
+      dieEl.setAttribute("aria-label", `Dice shows ${n}`);
+    }
+
+    function canPlay() {
+      if (rolling) return false;
+      const bet = Number(betEl.value);
+      if (!bet || bet < 1 || !Number.isFinite(bet)) { setMessage("Enter a valid bet (≥ 1)."); return false; }
+      if (bet > chips) { setMessage("You can't bet more than your chips.", "lose"); return false; }
+      if (mode === "parity" && (choice !== "odd" && choice !== "even")) { setMessage("Choose Odd or Even."); return false; }
+      if (mode === "exact" && !["1","2","3","4","5","6"].includes(String(choice))) { setMessage("Pick a number from 1–6."); return false; }
+      return true;
+    }
+
+  function payout(bet, rolled) {
+  let win = false, amount = 0, desc = "";
+  if (mode === "parity") {
+    const parity = rolled % 2 === 0 ? "even" : "odd";
+    win = (parity === choice);
+    amount = win ? bet /* net profit */ : -bet;
+    desc = win ? `Win! Odd/Even pays 2× bet (+${bet}).` : `Lost. (-${bet})`;
+  } else {
+    win = String(rolled) === String(choice);
+    amount = win ? bet * 5 /* net profit for 6x return */ : -bet;
+    desc = win ? `Jackpot! Exact match pays 6× bet (+${bet*5}).` : `No match. (-${bet})`;
+  }
+  setChips(chips + amount);
+  return { win, amount, desc };
+}
+
+    function endIfBroke() {
+      if (chips <= 0) {
+        setMessage("You're out of chips. Hit Reset to play again.", "lose");
+        rollBtn.disabled = true;
+        return true;
+      }
+      return false;
+    }
+
+    // --- Wire up UI ---
+    document.querySelectorAll('[data-parity]').forEach(el => {
+      el.addEventListener('click', () => {
+        clearActive('[data-parity]');
+        el.classList.add('active');
+        choice = el.dataset.parity;
+        pickParity(choice);
+      });
+    });
+    document.querySelectorAll('[data-num]').forEach(el => {
+      el.addEventListener('click', () => {
+        clearActive('[data-num]');
+        el.classList.add('active');
+        choice = el.dataset.num;
+        pickExact(choice);
+      });
+    });
+
+    tabParity.addEventListener('click', () => pickParity(choice ?? "odd"));
+    tabExact.addEventListener('click', () => pickExact(choice ?? "1"));
+
+    document.querySelectorAll('.qb').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const kind = btn.dataset.qb;
+        const cur = Number(betEl.value) || 0;
+        if (kind === "max") betEl.value = chips;
+        else if (kind === "half") betEl.value = Math.max(1, Math.floor(chips / 2));
+        else betEl.value = Math.min(chips, cur + Number(kind));
+      });
+    });
+
+    rollBtn.addEventListener('click', async () => {
+      if (!canPlay()) return;
+      rolling = true; rollBtn.disabled = true;
+
+      const bet = Math.floor(Number(betEl.value));
+      setMessage("Rolling…");
+      rotateDie();
+
+      // Short roll animation
+      await new Promise(r => setTimeout(r, 750));
+
+      const rolled = 1 + Math.floor(Math.random() * 6);
+      showFace(rolled);
+
+      const { win, amount, desc } = payout(bet, rolled);
+      setMessage(`${win ? "✅" : "❌"} Rolled ${rolled}. ${desc}`, win ? "win" : "lose");
+      log(`[Roll] Bet ${bet} on ${mode === "parity" ? choice : "#" + choice} → rolled ${rolled}. ${desc} | Chips: ${chips}`);
+
+      rolling = false; rollBtn.disabled = false;
+      endIfBroke();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      setChips(50);
+      betEl.value = "";
+      choice = null;
+      pickParity("odd");
+      clearActive('[data-parity]');
+      clearActive('[data-num]');
+      setMessage("New game. Place a bet to play.");
+      log("[Game] Reset — chips back to 50.");
+      showFace(1);
+      rollBtn.disabled = false;
+    });
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() === 'o') { pickParity('odd'); clearActive('[data-parity]'); document.querySelector('[data-parity="odd"]').classList.add('active'); choice = 'odd'; }
+      if (e.key.toLowerCase() === 'e') { pickParity('even'); clearActive('[data-parity]'); document.querySelector('[data-parity="even"]').classList.add('active'); choice = 'even'; }
+      if (/^[1-6]$/.test(e.key)) { pickExact(e.key); clearActive('[data-num]'); document.querySelector(`[data-num="${e.key}"]`).classList.add('active'); choice = e.key; }
+      if (e.key.toLowerCase() === 'r') { rollBtn.click(); }
+    });
+
+    // Init
+    setChips(50);
+    pickParity("odd");
+    showFace(1);
+   
+   
+
+
+    
+  </script>
+</body>
+</html>
